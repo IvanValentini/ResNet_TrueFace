@@ -1,0 +1,13 @@
+{
+    "Model": "resnet50pt",
+    "LoadCheckpointPath": "SharedDatasets1024BFDResnet50",
+    "SaveCheckpointPath": "Checkpoints/SharedDataset_60k_lr1e-5.pth",
+    "DatasetPath": "images/",
+    "LoadCheckpoint": false,
+    "Train": false,
+    "ImgChannels": 3,
+    "Classes": 2,
+    "LearningRate": 0.00001,
+    "BatchSize": 2,
+    "Epochs": 10
+}
