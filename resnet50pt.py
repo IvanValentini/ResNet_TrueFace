@@ -1,7 +1,6 @@
 from __future__ import print_function
 from __future__ import division
 import torch.nn as nn
-from torch.utils.data import *
 from torchvision import models
 
 def set_parameter_requires_grad(model, feature_extracting):

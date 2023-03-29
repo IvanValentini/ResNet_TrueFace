@@ -1,13 +1,16 @@
 {
-    "Model": "resnet50pt",
-    "LoadCheckpointPath": "SharedDatasets1024BFDResnet50",
-    "SaveCheckpointPath": "Checkpoints/SharedDataset_60k_lr1e-5.pth",
-    "DatasetPath": "images/",
-    "LoadCheckpoint": false,
-    "Train": false,
+    "Model": "resnet50ft",
+    "LoadCheckpointPath": "Checkpoints/SharedDataset_60k_lr1e-5.pth",
+    "SaveCheckpointPath": "Checkpoints/test",
+    "DatasetPath": "/media/mmlab/Datasets_4TB/truebees/truebees/TrueFace",
+    "DatasetTest": "post",
+    "LoadCheckpoint": true,
+    "Phase": "test",
     "ImgChannels": 3,
+    "ClassesCheckpoint": 2,
     "Classes": 2,
-    "LearningRate": 0.00001,
-    "BatchSize": 2,
-    "Epochs": 10
+    "LearningRate": 1e-3,
+    "BatchSize": 5,
+    "Epochs": 20,
+    "Wandb": false
 }
