@@ -6,12 +6,13 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import *
+from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as transforms
 # Import networks
 from resnet50pt import *
 from resnet50ft import *
 # Import utilities
+import numpy as np
 import pandas as pd
 import ImportDataset
 import json
@@ -28,56 +29,53 @@ f = open ("config.json", "r")
 settings = json.loads(f.read())
 print("Loaded settings")
 # Set device
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 # ----------------------------------------------------------------------------
 # LOAD DATASET
 # ----------------------------------------------------------------------------
 # Import Dataset
-transforms = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        transforms.Resize([1024,1024])
-    ])
-data_set = ImportDataset.TuningDatabase(settings["DatasetPath"], transforms)
+data_set = ImportDataset.LoaderDataset(settings, 2)
 
 print("Imported dataset")
 print(f"Loaded {len(data_set)} images")
 
 # Generate train e test set
-if settings["Train"]:
-    train_len = int(len(data_set)*0.8)
+if settings["Phase"] == "train":
+    train_len = int(len(data_set)*0.9)
     train_set, val_set = random_split(data_set, [train_len, len(data_set) - train_len])
-    train_loader = DataLoader(dataset=train_set, batch_size=settings["BatchSize"], shuffle=True)
-    val_loader = DataLoader(dataset=val_set, batch_size=settings["BatchSize"], shuffle=True)
+    train_loader = DataLoader(dataset=train_set, batch_size=settings["BatchSize"], shuffle=True, num_workers=4)
+    val_loader = DataLoader(dataset=val_set, batch_size=settings["BatchSize"], shuffle=True, num_workers=4)
 else:
-    print("Testing!")
-    test_loader = DataLoader(dataset=data_set, batch_size=settings["BatchSize"], shuffle=True)
+    test_loader = DataLoader(dataset=data_set, batch_size=settings["BatchSize"], shuffle=True, num_workers=4)
 
 
 # ----------------------------------------------------------------------------
 # INITIALIZE NEURAL NETWORK
 # ----------------------------------------------------------------------------
 # Initialize model
-model = locals()[settings["Model"]](device=device, num_classes=settings["Classes"])
+model = locals()[settings["Model"]](device=device, num_classes=settings["ClassesCheckpoint"])
     
 best_accuracy = 0
 best_epoch = 0
 current_epoch = 0
-# Loss and optimizer
-# criterion = nn.BCEWithLogitsLoss()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=settings["LearningRate"])
 
 # Check if checkpoints
 if settings["LoadCheckpoint"]==True:
-    print("Loaded checkpoints!")
-    print(settings["LoadCheckpointPath"])
-    checkpoint = torch.load(settings["LoadCheckpointPath"])
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
+    if settings["Model"]=="resnet50pt":
+        checkpoint = torch.load(settings["LoadCheckpointPath"])
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+    else:
+        checkpoint = torch.load(settings["LoadCheckpointPath"])
+        model.load_state_dict(checkpoint['model'])
+
+if settings["Model"]=="resnet50ft" and settings["Classes"]!=1:
+    model.change_output(settings["Classes"])
 
 # ----------------------------------------------------------------------------
 # CHECK ACCURACY ON DATASET
@@ -107,22 +105,44 @@ def check_accuracy(loader, model, train):
                 tbatch.set_description(f"Batch {batch_idx}")
 
                 x = x.to(device=device)
-                # Better way to do this?
-                y = y.to(device=device).argmax(dim=1, keepdim=True).squeeze(dim=1).squeeze(dim=1).squeeze(dim=1)
-                y_true = (torch.cat((y_true, y),dim=0))                
-                scores = nn.Softmax(dim=1)(model(x))
-                # scores = torch.sigmoid(model(x))
-                _, predictions = scores.max(1)
-                # predictions = torch.round(scores).int()
-                predictions = predictions.squeeze()
-                y_pred = torch.cat((y_pred, predictions.view(1)),dim=0)
+                if settings["Classes"] == 1:
+                    if y.size(0) != 1:
+                        y_squeeze = y.to(device=device).squeeze()
+                        y_true = (torch.cat((y_true, y_squeeze)))
+                    
+                        scores = torch.sigmoid(model(x))
+                        predictions = torch.round(scores).int()
+                        predictions = predictions.squeeze()
+                        y_pred = torch.cat((y_pred, predictions))
+                else:
+                    if y.size(0) != 1:
+                        y_squeeze = y.to(device=device).argmax(dim=1, keepdim=True).squeeze()
+                        y_true = (torch.cat((y_true, y_squeeze)))
+                    
+                        scores = nn.Softmax(dim=1)(model(x))
+                        _, predictions = scores.max(1)
+                        predictions = predictions.squeeze()
+                        y_pred = torch.cat((y_pred, predictions))
+                    else:        
+                        y_squeeze = y.to(device=device).argmax(dim=1, keepdim=True).squeeze()
+                        y_true = (torch.cat((y_true, y_squeeze)))
+                        scores = nn.Softmax(dim=1)(model(x))
+                        # scores = torch.sigmoid(model(x))
+                        _, predictions = scores.max(1)
+                        # predictions = torch.round(scores).int()
+                        predictions = predictions.squeeze()
+                        y_pred = predictions
 
-                zerosamples += len(y[y==0])
-                zerocorrect += (y[y==predictions]==0).sum().item()
-                onesamples += len(y[y==1])
-                onecorrect += (y[y==predictions]==1).sum().item()
-                num_samples += predictions.view(1).size(0)
-                num_correct += (predictions == y).sum()
+                zerosamples += len(y_squeeze[y_squeeze==0])
+                zerocorrect += (y_squeeze[y_squeeze==predictions]==0).sum().item()
+                onesamples += len(y_squeeze[y_squeeze==1])
+                onecorrect += (y_squeeze[y_squeeze==predictions]==1).sum().item()
+                if y.size(0) != 1:
+                    num_samples += predictions.size(0)
+                    num_correct += (predictions == y_squeeze).sum()
+                else:
+                    num_samples += 1
+                    num_correct += (predictions == y_squeeze).sum()
                 
                 zeroaccuracy=0
                 oneaccuracy=0
@@ -146,7 +166,7 @@ def check_accuracy(loader, model, train):
 # ----------------------------------------------------------------------------
 # TRAIN NETWORK
 # ----------------------------------------------------------------------------
-if settings["Train"]:
+if settings["Phase"] == "train":
     for epoch in range(settings["Epochs"]):
         model.train()
         with tqdm(train_loader, unit="batch") as tepoch:
@@ -212,6 +232,6 @@ if settings["Train"]:
 # ----------------------------------------------------------------------------
 # CHECK ACCURACY INVOCATION
 # ----------------------------------------------------------------------------
-if not(settings["Train"]):
+if settings["Phase"]=="test":
     check_accuracy(test_loader, model, train=False)
     
