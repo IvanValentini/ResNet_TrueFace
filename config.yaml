@@ -5,7 +5,7 @@ resources:
    slots_per_trial: 1
 
 bind_mounts:
-  - host_path: /home/checkshared/ivanvalentini/images
+  - host_path: /media/mmlab/Volume/ForensicsDataset/VipCup/VipCup_Shared/bird/PreSocialDataset/birds_reconstruction/
     container_path: /media/dataset
     read_only: true
   - host_path: /home/checkshared/ivanvalentini/checkpoints

@@ -6,6 +6,7 @@ from PIL import Image
 class TuningDatabase(datasets.DatasetFolder):
     def __init__(self, path, transform):
         self.classes = ["real", "generated"]
+        print(path)
         self.samples = []
         self.realdownsamplervariable = 0
         self.fakedownsamplervariable = 0
@@ -28,7 +29,7 @@ class TuningDatabase(datasets.DatasetFolder):
                         dirs[:] = [d for d in dirs if d not in exclude]
                         self.fakedownsamplervariable = 0
                         for file in sorted(files):
-                            if (file.endswith(".png") or file.endswith(".jpg") or file.endswith(".jpeg")) and (self.fakedownsamplervariable % 1 == 0) and (self.fakedownsamplervariable<15):
+                            if (file.endswith(".png") or file.endswith(".jpg") or file.endswith(".jpeg")) and (self.fakedownsamplervariable % 1 == 0):
                                 item = os.path.join(root, file), torch.tensor([[[0]],[[1]]])
                                 # item = os.path.join(root, file), torch.tensor([[1]])
                                 self.samples.append(item)
