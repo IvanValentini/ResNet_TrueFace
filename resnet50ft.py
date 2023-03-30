@@ -7,19 +7,6 @@ from torchvision import transforms
 LIMIT_SIZE  = 1536
 LIMIT_SLIDE = 1024
 
-class ChannelLinear(nn.Linear):
-    def __init__(self, in_features: int, out_features: int, bias: bool = True) -> None:
-        super(ChannelLinear, self).__init__(in_features, out_features, bias)
-
-    def forward(self, x):
-        out_shape = [x.shape[0], x.shape[2], x.shape[3], self.out_features]
-        x = x.permute(0,2,3,1).reshape(-1,self.in_features)
-        x = x.matmul(self.weight.t())
-        if self.bias is not None:
-            x = x + self.bias[None,:]
-        x = x.view(out_shape).permute(0,3,1,2)
-        return x
-
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -147,7 +134,6 @@ class ResNet(nn.Module):
         norm_layer: Optional[Callable[..., nn.Module]] = None
     ) -> None:
         super(ResNet, self).__init__()
-        self.block = block
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
@@ -244,11 +230,6 @@ class ResNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
-    
-    def change_output(self, num_classes):
-        self.fc = ChannelLinear(512 * self.block.expansion, num_classes)
-        torch.nn.init.normal_(self.fc.weight.data, 0.0, 0.02)
-        return self
   
     def apply(self, pil):
         device = self.conv1.weight.device
