@@ -1,0 +1,20 @@
+name: checkshared
+entrypoint: python3 main.py
+
+resources:
+   slots_per_trial: 1
+
+bind_mounts:
+  - host_path: /home/checkshared/ivanvalentini/images
+    container_path: /media/dataset
+    read_only: true
+  - host_path: /home/checkshared/ivanvalentini/checkpoints
+    container_path: /media/checkpoint
+    read_only: false
+
+searcher:
+  name: single
+  metric: accuracy
+  max_length: 1
+  
+max_restarts: 0

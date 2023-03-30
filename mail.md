@@ -1,19 +1,3 @@
-# ResNet_TrueFace
-Resnet models used to fine tune and test trueface
-## Models and weights
-In this repository there are two resnet50 models.
-
- - The first model called resnet50pt is a pretrained model on imagenet and fine tuned on all trueface (i.e. incremental fine tuning, first on pre-social dataset, then post-social dataset). The corresponding weights file is `SharedDatasets1024BFDResnet50`.
- - The second model called resent50ft is a model inspired to https://github.com/grip-unina/GANimageDetection. Starting from their weights we fine tuned the resnet only on the post-social dataset. The corresponding weights file is `SharedDataset_60k_lr1e-5.pth`.
-## Setup
-All the parameteres must be set in the json file `settings`. There it is possible to select the model, the learning rate and the batch size to use during training and test.
-
-
-ssh checkshared@10.196.36.18
-scp -r images/ checkshared@10.196.36.18:/media/mmlab/Volume/ivanvalentini/images
-det -u checkshared -m 10.196.36.18:8080 experiment create -f config.yaml .
-
-
 Buongiorno, 
 prima di lanciare il primo test vorrei chiedere conferma della configurazione. Questi sono i passaggi che ho svolto:
 
@@ -24,7 +8,7 @@ prima di lanciare il primo test vorrei chiedere conferma della configurazione. Q
 
 ```sh
 pip install pandas
-pip install torch torchvision torchaudio
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116s
 ```
 
 - Creato una struttura delle cartelle in  di questo tipo nel cluster:
@@ -77,12 +61,9 @@ searcher:
 max_restarts: 0
 ```
 
-Ho anche caricato le 1000 immagini originali della categoria bird (in /media/mmlab/Volume/ForensicsDataset/VipCup/VipCup_Shared/bird/PreSocialDataset). E volevo fare il testing delle immagini.
+Ho anche caricato le 1000 immagini originali della categoria bird (in /media/mmlab/Volume/ForensicsDataset/VipCup/VipCup_Shared/bird/PreSocialDataset). E volevo fare il testing delle immagini della categoria bird, e poi successivamente tutte le altre.
 Con i file così configurati mi è sufficiente far partire: 
 ```
 det -u checkshared -m 10.196.36.18:8080 experiment create -f config.yaml .
 ```
 per fare il testing delle immagini, o c'è un errore nella configurazione?
-
-
-scp /mnt/c/Users/Ivan/Desktop/UniTN/MultimediaDataSecurity/truebees/TrueBees/original_images/fake/birds.zip checkshared@10.196.36.18:/media/mmlab/Volume/ForensicsDataset/VipCup/VipCup_Shared/bird/PreSocialDataset/

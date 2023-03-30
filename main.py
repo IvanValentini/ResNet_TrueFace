@@ -15,7 +15,9 @@ from resnet50ft import *
 import pandas as pd
 import ImportDataset
 import json
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
+import numpy as np
 
 
 # ----------------------------------------------------------------------------
@@ -24,7 +26,7 @@ from tqdm import tqdm
 # Load settings
 f = open ("config.json", "r")
 settings = json.loads(f.read())
-
+print("Loaded settings")
 # Set device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -39,6 +41,9 @@ transforms = transforms.Compose([
     ])
 data_set = ImportDataset.TuningDatabase(settings["DatasetPath"], transforms)
 
+print("Imported dataset")
+print(f"Loaded {len(data_set)} images")
+
 # Generate train e test set
 if settings["Train"]:
     train_len = int(len(data_set)*0.8)
@@ -46,6 +51,7 @@ if settings["Train"]:
     train_loader = DataLoader(dataset=train_set, batch_size=settings["BatchSize"], shuffle=True)
     val_loader = DataLoader(dataset=val_set, batch_size=settings["BatchSize"], shuffle=True)
 else:
+    print("Testing!")
     test_loader = DataLoader(dataset=data_set, batch_size=settings["BatchSize"], shuffle=True)
 
 
@@ -65,6 +71,8 @@ optimizer = optim.Adam(model.parameters(), lr=settings["LearningRate"])
 
 # Check if checkpoints
 if settings["LoadCheckpoint"]==True:
+    print("Loaded checkpoints!")
+    print(settings["LoadCheckpointPath"])
     checkpoint = torch.load(settings["LoadCheckpointPath"])
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -75,6 +83,7 @@ if settings["LoadCheckpoint"]==True:
 # CHECK ACCURACY ON DATASET
 # ----------------------------------------------------------------------------
 def check_accuracy(loader, model, train):
+    print("Checking accuracy!")
     if train:
         print("Checking accuracy on training data")
     else:
@@ -98,21 +107,21 @@ def check_accuracy(loader, model, train):
                 tbatch.set_description(f"Batch {batch_idx}")
 
                 x = x.to(device=device)
-                y = y.to(device=device).argmax(dim=1, keepdim=True).squeeze()
-                y_true = (torch.cat((y_true, y)))
-                
+                # Better way to do this?
+                y = y.to(device=device).argmax(dim=1, keepdim=True).squeeze(dim=1).squeeze(dim=1).squeeze(dim=1)
+                y_true = (torch.cat((y_true, y),dim=0))                
                 scores = nn.Softmax(dim=1)(model(x))
                 # scores = torch.sigmoid(model(x))
                 _, predictions = scores.max(1)
                 # predictions = torch.round(scores).int()
                 predictions = predictions.squeeze()
-                y_pred = torch.cat((y_pred, predictions))
+                y_pred = torch.cat((y_pred, predictions.view(1)),dim=0)
 
                 zerosamples += len(y[y==0])
                 zerocorrect += (y[y==predictions]==0).sum().item()
                 onesamples += len(y[y==1])
                 onecorrect += (y[y==predictions]==1).sum().item()
-                num_samples += predictions.size(0)
+                num_samples += predictions.view(1).size(0)
                 num_correct += (predictions == y).sum()
                 
                 zeroaccuracy=0

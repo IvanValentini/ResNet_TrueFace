@@ -1,13 +1,13 @@
 {
-    "Model": "resnet50pt",
-    "LoadCheckpointPath": "SharedDatasets1024BFDResnet50",
-    "SaveCheckpointPath": "Checkpoints/SharedDataset_60k_lr1e-5.pth",
-    "DatasetPath": "images/",
-    "LoadCheckpoint": false,
+    "Model": "resnet50ft",
+    "LoadCheckpointPath": "/media/checkpoint/SharedDataset_60k_lr1e-5.pth",
+    "SaveCheckpointPath": "/media/checkpoint/Checkpoints/SharedDataset_60k_lr1e-5.pth",
+    "DatasetPath": "/media/dataset",
+    "LoadCheckpoint": true,
     "Train": false,
     "ImgChannels": 3,
     "Classes": 2,
     "LearningRate": 0.00001,
-    "BatchSize": 2,
+    "BatchSize": 1,
     "Epochs": 10
 }
