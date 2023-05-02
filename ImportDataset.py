@@ -17,7 +17,7 @@ class TuningDatabase(datasets.DatasetFolder):
                 if entry == 'FFHQ' or entry == 'Real' or entry == '0_Real':
                     for root, dirs, files in os.walk(data_folder, topdown=True):
                         for file in sorted(files):
-                            if (file.endswith(".png") or file.endswith(".jpg") or file.endswith(".jpeg"))  and (self.realdownsamplervariable % 1 == 0) and (self.realdownsamplervariable<60):
+                            if (file.endswith(".png") or file.endswith(".jpg") or file.endswith(".jpeg"))  and (self.realdownsamplervariable % 1 == 0):
                                 item = os.path.join(root, file), torch.tensor([[[1]],[[0]]])
                                 # item = os.path.join(root, file), torch.tensor([[0]])
                                 self.samples.append(item)

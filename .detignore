@@ -7,3 +7,5 @@ Epoch.txt
 logging.log
 output.out
 README.md
+mail.md
+.gitignore
